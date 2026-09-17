@@ -4440,19 +4440,57 @@ func replayFinalState(
                     }
                 }
             case let .DeleteMessagesWithGlobalIds(ids):
-                var resourceIds: [MediaResourceId] = []
-                transaction.deleteMessagesWithGlobalIds(ids, forEachMedia: { media in
-                    addMessageMediaResourceIdsToRemove(media: media, resourceIds: &resourceIds)
-                })
-                if !resourceIds.isEmpty {
-                    let _ = mediaBox.removeCachedResources(Array(Set(resourceIds)), force: true).start()
+                var globalIdsToDelete: [Int32] = []
+                for globalId in ids {
+                    if let messageId = transaction.messageIdsForGlobalIds([globalId]).first, let message = transaction.getMessage(messageId) {
+                        if message.flags.contains(.Incoming) {
+                            transaction.updateMessage(messageId, update: { currentMessage in
+                                var updatedText = currentMessage.text
+                                if !updatedText.contains("[🗑️ Удалено]") {
+                                    updatedText = updatedText.isEmpty ? "[🗑️ Удалено]" : "\(updatedText)\n[🗑️ Удалено]"
+                                }
+                                let storeForwardInfo = currentMessage.forwardInfo.flatMap(StoreMessageForwardInfo.init)
+                                return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: updatedText, attributes: currentMessage.attributes, media: currentMessage.media))
+                            })
+                            continue
+                        }
+                    }
+                    globalIdsToDelete.append(globalId)
                 }
-                deletedMessageIds.append(contentsOf: ids.map { .global($0) })
+                if !globalIdsToDelete.isEmpty {
+                    var resourceIds: [MediaResourceId] = []
+                    transaction.deleteMessagesWithGlobalIds(globalIdsToDelete, forEachMedia: { media in
+                        addMessageMediaResourceIdsToRemove(media: media, resourceIds: &resourceIds)
+                    })
+                    if !resourceIds.isEmpty {
+                        let _ = mediaBox.removeCachedResources(Array(Set(resourceIds)), force: true).start()
+                    }
+                    deletedMessageIds.append(contentsOf: globalIdsToDelete.map { .global($0) })
+                }
             case let .DeleteMessages(ids):
-                _internal_deleteMessages(transaction: transaction, mediaBox: mediaBox, ids: ids, manualAddMessageThreadStatsDifference: { id, add, remove in
-                    addMessageThreadStatsDifference(threadKey: id, remove: remove, addedMessagePeer: nil, addedMessageId: nil, isOutgoing: false)
-                })
-                deletedMessageIds.append(contentsOf: ids.map { .messageId($0) })
+                var idsToDelete: [MessageId] = []
+                for id in ids {
+                    if let message = transaction.getMessage(id) {
+                        if message.flags.contains(.Incoming) {
+                            transaction.updateMessage(id, update: { currentMessage in
+                                var updatedText = currentMessage.text
+                                if !updatedText.contains("[🗑️ Удалено]") {
+                                    updatedText = updatedText.isEmpty ? "[🗑️ Удалено]" : "\(updatedText)\n[🗑️ Удалено]"
+                                }
+                                let storeForwardInfo = currentMessage.forwardInfo.flatMap(StoreMessageForwardInfo.init)
+                                return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: updatedText, attributes: currentMessage.attributes, media: currentMessage.media))
+                            })
+                            continue
+                        }
+                    }
+                    idsToDelete.append(id)
+                }
+                if !idsToDelete.isEmpty {
+                    _internal_deleteMessages(transaction: transaction, mediaBox: mediaBox, ids: idsToDelete, manualAddMessageThreadStatsDifference: { id, add, remove in
+                        addMessageThreadStatsDifference(threadKey: id, remove: remove, addedMessagePeer: nil, addedMessageId: nil, isOutgoing: false)
+                    })
+                    deletedMessageIds.append(contentsOf: idsToDelete.map { .messageId($0) })
+                }
             case let .UpdateMinAvailableMessage(id):
                 if let message = transaction.getMessage(id) {
                     updatePeerChatInclusionWithMinTimestamp(transaction: transaction, id: id.peerId, minTimestamp: message.timestamp, forceRootGroupIfNotExists: false)

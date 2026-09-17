@@ -2,6 +2,7 @@
 #include <cstdint>
 
 #import "MediaUtils.h"
+#import "TgCallRecorder.h"
 
 #import "Instance.h"
 #import "InstanceImpl.h"
@@ -540,6 +541,7 @@ public:
             }
         }
         _mutex.Unlock();
+        TgCallRecorderWriteSamples(audioSamples, nSamples, nBytesPerSample, nChannels, samplesPerSec);
         return 0;
     }
 
@@ -620,6 +622,10 @@ public:
         
         _mutex.Unlock();
         
+        if (audioSamples && nSamplesOut > 0) {
+            TgCallRecorderWriteSamples(audioSamples, nSamplesOut, nBytesPerSample, nChannels, samplesPerSec);
+        }
+
         return result;
     }
 
@@ -653,6 +659,7 @@ public:
     virtual void Start() {
         if (!_isStarted) {
             _isStarted = true;
+            TgCallRecorderStart(48000, 1);
             WrappedInstance()->Init();
             
             WrappedInstance()->RegisterAudioCallback(this);
@@ -686,6 +693,7 @@ public:
     virtual void ActualStop() {
         if (_isStarted) {
             _isStarted = false;
+            TgCallRecorderStop();
             WrappedInstance()->StopPlayout();
             WrappedInstance()->StopRecording();
             WrappedInstance()->Terminate();
