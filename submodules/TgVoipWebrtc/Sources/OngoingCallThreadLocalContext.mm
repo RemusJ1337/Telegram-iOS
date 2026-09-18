@@ -541,7 +541,7 @@ public:
             }
         }
         _mutex.Unlock();
-        TgCallRecorderWriteSamples(audioSamples, nSamples, nBytesPerSample, nChannels, samplesPerSec);
+        TgCallRecorderWriteMicSamples(audioSamples, nSamples, nBytesPerSample, nChannels, samplesPerSec);
         return 0;
     }
 
@@ -623,7 +623,7 @@ public:
         _mutex.Unlock();
         
         if (audioSamples && nSamplesOut > 0) {
-            TgCallRecorderWriteSamples(audioSamples, nSamplesOut, nBytesPerSample, nChannels, samplesPerSec);
+            TgCallRecorderWriteSpeakerSamples(audioSamples, nSamplesOut, nBytesPerSample, nChannels, samplesPerSec);
         }
 
         return result;

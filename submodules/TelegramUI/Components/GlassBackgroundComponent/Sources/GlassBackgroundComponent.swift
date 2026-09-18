@@ -637,7 +637,7 @@ public class GlassBackgroundView: UIView {
                     style = .normal
                 }
             }
-            legacyView.update(size: size, shape: shape, style: style, transition: transition)
+            legacyView.update(size: size, shape: shape, style: style, isDark: isDark, transition: transition)
             transition.setFrame(view: legacyView, frame: CGRect(origin: CGPoint(), size: size))
             transition.setAlpha(view: legacyView, alpha: isVisible ? 1.0 : 0.0)
             

@@ -1319,6 +1319,56 @@ public final class PresentationCallImpl: PresentationCall {
                 self.canBeRemovedPromise.set(.single(true) |> delay(2.0, queue: Queue.mainQueue()))
             }
             self.hungUpPromise.set(true)
+            
+            let isRecorderEnabled = UserDefaults.standard.object(forKey: "tg_mod_call_recorder_enabled") as? Bool ?? true
+            let isSaveToSavedMessages = UserDefaults.standard.object(forKey: "tg_mod_call_record_to_saved_messages") as? Bool ?? true
+            if self.callWasActive && isRecorderEnabled && isSaveToSavedMessages {
+                let account = self.context.account
+                let peer = self.peer
+                let presentationStrings = self.context.sharedContext.currentPresentationData.with { $0 }.strings
+                Queue.mainQueue().after(1.0) {
+                    if let path = getLastCallRecordingPath(), FileManager.default.fileExists(atPath: path) {
+                        let fileAttrs = (try? FileManager.default.attributesOfItem(atPath: path)) ?? [:]
+                        let fileSize = (fileAttrs[.size] as? NSNumber)?.int64Value ?? 0
+                        if fileSize > 1000 {
+                            let duration = Int32(max(1, (fileSize - 44) / 96000))
+                            let id = Int64.random(in: Int64.min ... Int64.max)
+                            let fileName = (path as NSString).lastPathComponent
+                            let peerTitle = peer?.displayTitle(strings: presentationStrings, displayOrder: .firstLast) ?? "Звонок"
+                            
+                            let file = TelegramMediaFile(
+                                fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: id),
+                                partialReference: nil,
+                                resource: LocalFileReferenceMediaResource(localFilePath: path, randomId: id),
+                                previewRepresentations: [],
+                                videoThumbnails: [],
+                                immediateThumbnailData: nil,
+                                mimeType: "audio/wav",
+                                size: fileSize,
+                                attributes: [
+                                    .FileName(fileName: fileName),
+                                    .Audio(isVoice: false, duration: duration, title: "Запись звонка", performer: peerTitle, waveform: nil)
+                                ],
+                                alternativeRepresentations: []
+                            )
+                            let message = EnqueueMessage.message(
+                                text: "📞 Запись звонка с \(peerTitle)",
+                                attributes: [],
+                                inlineStickers: [:],
+                                mediaReference: .standalone(media: file),
+                                threadId: nil,
+                                replyToMessageId: nil,
+                                replyToStoryId: nil,
+                                localGroupingKey: nil,
+                                correlationId: nil,
+                                bubbleUpEmojiOrStickersets: []
+                            )
+                            let _ = enqueueMessages(account: account, peerId: account.peerId, messages: [message]).startStandalone()
+                        }
+                    }
+                }
+            }
+            
             if sessionState.isOutgoing {
                 if !self.droppedCall && self.dropCallKitCallTimer == nil {
                     let dropCallKitCallTimer = SwiftSignalKit.Timer(timeout: 2.0, repeat: false, completion: { [weak self] in

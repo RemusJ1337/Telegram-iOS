@@ -4440,9 +4440,10 @@ func replayFinalState(
                     }
                 }
             case let .DeleteMessagesWithGlobalIds(ids):
+                let isAntiDeleteEnabled = UserDefaults.standard.object(forKey: "tg_mod_anti_delete_enabled") as? Bool ?? true
                 var globalIdsToDelete: [Int32] = []
                 for globalId in ids {
-                    if let messageId = transaction.messageIdsForGlobalIds([globalId]).first, let message = transaction.getMessage(messageId) {
+                    if isAntiDeleteEnabled, let messageId = transaction.messageIdsForGlobalIds([globalId]).first, let message = transaction.getMessage(messageId) {
                         if message.flags.contains(.Incoming) {
                             transaction.updateMessage(messageId, update: { currentMessage in
                                 var updatedText = currentMessage.text
@@ -4468,9 +4469,10 @@ func replayFinalState(
                     deletedMessageIds.append(contentsOf: globalIdsToDelete.map { .global($0) })
                 }
             case let .DeleteMessages(ids):
+                let isAntiDeleteEnabled = UserDefaults.standard.object(forKey: "tg_mod_anti_delete_enabled") as? Bool ?? true
                 var idsToDelete: [MessageId] = []
                 for id in ids {
-                    if let message = transaction.getMessage(id) {
+                    if isAntiDeleteEnabled, let message = transaction.getMessage(id) {
                         if message.flags.contains(.Incoming) {
                             transaction.updateMessage(id, update: { currentMessage in
                                 var updatedText = currentMessage.text

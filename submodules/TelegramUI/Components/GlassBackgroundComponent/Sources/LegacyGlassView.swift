@@ -101,6 +101,7 @@ final class LegacyGlassView: UIView {
     private var params: Params?
     private var maskLayer: CAShapeLayer?
     
+    private let blurView: UIVisualEffectView
     private let backdropLayer: CALayer?
     private let backdropLayerDelegate: BackdropLayerDelegate
     
@@ -108,10 +109,17 @@ final class LegacyGlassView: UIView {
         self.backdropLayerDelegate = BackdropLayerDelegate()
         self.backdropLayer = createBackdropLayer()
         
+        let blurEffect = UIBlurEffect(style: .systemThinMaterial)
+        let blurView = UIVisualEffectView(effect: blurEffect)
+        blurView.isUserInteractionEnabled = false
+        self.blurView = blurView
+        
         super.init(frame: frame)
         
         self.layer.cornerCurve = .circular
         self.clipsToBounds = true
+        
+        self.addSubview(blurView)
         
         if let backdropLayer = self.backdropLayer {
             self.layer.addSublayer(backdropLayer)
@@ -126,17 +134,52 @@ final class LegacyGlassView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
-    func update(size: CGSize, cornerRadius: CGFloat, style: Style, transition: ComponentTransition) {
-        self.update(size: size, shape: .roundedRect(cornerRadius: cornerRadius), style: style, transition: transition)
+    func update(size: CGSize, cornerRadius: CGFloat, style: Style, isDark: Bool = false, transition: ComponentTransition) {
+        self.update(size: size, shape: .roundedRect(cornerRadius: cornerRadius), style: style, isDark: isDark, transition: transition)
     }
 
-    func update(size: CGSize, shape: GlassBackgroundView.Shape, style: Style, transition: ComponentTransition) {
+    func update(size: CGSize, shape: GlassBackgroundView.Shape, style: Style, isDark: Bool = false, transition: ComponentTransition) {
         let params = Params(size: size, shape: shape, style: style)
         let previousParams = self.params
         if self.params == params {
             return
         }
         self.params = params
+        
+        transition.setFrame(view: self.blurView, frame: CGRect(origin: CGPoint(), size: size))
+        let blurStyle: UIBlurEffect.Style
+        switch style {
+        case .clear:
+            blurStyle = isDark ? .systemUltraThinMaterialDark : .systemUltraThinMaterialLight
+        case .normal:
+            blurStyle = isDark ? .systemThinMaterialDark : .systemThinMaterialLight
+        }
+        self.blurView.effect = UIBlurEffect(style: blurStyle)
+        
+        switch shape {
+        case let .roundedRect(cornerRadius):
+            self.maskLayer = nil
+            self.layer.mask = nil
+            transition.setCornerRadius(layer: self.layer, cornerRadius: cornerRadius)
+            self.blurView.layer.cornerRadius = cornerRadius
+            self.blurView.layer.masksToBounds = cornerRadius > 0
+        case let .customRoundedRect(cornerRadii):
+            transition.setCornerRadius(layer: self.layer, cornerRadius: 0.0)
+            self.blurView.layer.cornerRadius = 0.0
+            self.blurView.layer.masksToBounds = false
+
+            let maskLayer: CAShapeLayer
+            if let current = self.maskLayer {
+                maskLayer = current
+            } else {
+                maskLayer = CAShapeLayer()
+                maskLayer.fillColor = UIColor.black.cgColor
+                self.maskLayer = maskLayer
+                self.layer.mask = maskLayer
+            }
+            transition.setFrame(layer: maskLayer, frame: CGRect(origin: CGPoint(), size: size))
+            transition.setShapeLayerPath(layer: maskLayer, path: GlassBackgroundView.generateRoundedRectPath(size: size, cornerRadii: cornerRadii))
+        }
         
         guard let backdropLayer = self.backdropLayer else {
             return
@@ -173,26 +216,6 @@ final class LegacyGlassView: UIView {
             }
         }
         
-        switch shape {
-        case let .roundedRect(cornerRadius):
-            self.maskLayer = nil
-            self.layer.mask = nil
-            transition.setCornerRadius(layer: self.layer, cornerRadius: cornerRadius)
-        case let .customRoundedRect(cornerRadii):
-            transition.setCornerRadius(layer: self.layer, cornerRadius: 0.0)
-
-            let maskLayer: CAShapeLayer
-            if let current = self.maskLayer {
-                maskLayer = current
-            } else {
-                maskLayer = CAShapeLayer()
-                maskLayer.fillColor = UIColor.black.cgColor
-                self.maskLayer = maskLayer
-                self.layer.mask = maskLayer
-            }
-            transition.setFrame(layer: maskLayer, frame: CGRect(origin: CGPoint(), size: size))
-            transition.setShapeLayerPath(layer: maskLayer, path: GlassBackgroundView.generateRoundedRectPath(size: size, cornerRadii: cornerRadii))
-        }
         transition.setFrame(layer: backdropLayer, frame: CGRect(origin: CGPoint(), size: size))
         
         if #available(iOS 17.0, *), DeviceMetrics.performance.isGraphicallyCapable {

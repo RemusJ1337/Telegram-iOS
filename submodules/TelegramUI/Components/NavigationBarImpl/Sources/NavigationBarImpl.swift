@@ -652,6 +652,7 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
         
         super.init()
         
+        self.addSubnode(self.backgroundNode)
         if case .glass = presentationData.theme.style {
             let edgeEffectView = EdgeEffectView()
             edgeEffectView.isUserInteractionEnabled = false
@@ -674,7 +675,6 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
             self.rightButtonsBackgroundView = rightButtonsBackgroundView
             backgroundContainer.contentView.addSubview(rightButtonsBackgroundView.background)
         } else {
-            self.addSubnode(self.backgroundNode)
             self.view.addSubview(self.customOverBackgroundContentView)
         }
         self.addSubnode(self.buttonsContainerNode)
