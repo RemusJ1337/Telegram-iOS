@@ -3457,21 +3457,23 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
                 let tooltipScreenValue: UndoOverlayController? = tooltipScreen
                 self.currentTooltipUpdateTimer?.invalidate()
                 self.currentTooltipUpdateTimer = Foundation.Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true, block: { [weak self, weak view, weak tooltipScreenValue] _ in
-                    guard let self, let view, let component = view.component else {
-                        return
-                    }
-                    guard let tooltipScreenValue else {
-                        self.currentTooltipUpdateTimer?.invalidate()
-                        self.currentTooltipUpdateTimer = nil
-                        return
-                    }
+                    Task { @MainActor [weak self, weak view, weak tooltipScreenValue] in
+                        guard let self, let view, let component = view.component else {
+                            return
+                        }
+                        guard let tooltipScreenValue else {
+                            self.currentTooltipUpdateTimer?.invalidate()
+                            self.currentTooltipUpdateTimer = nil
+                            return
+                        }
 
-                    let timestamp = Int32(Date().timeIntervalSince1970)
-                    let remainingActiveSeconds = max(1, activeUntilTimestamp - timestamp)
+                        let timestamp = Int32(Date().timeIntervalSince1970)
+                        let remainingActiveSeconds = max(1, activeUntilTimestamp - timestamp)
 
-                    let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }.withUpdated(theme: defaultDarkPresentationTheme)
-                    let text = component.strings.Story_ToastStealthModeActiveText(timeIntervalString(strings: presentationData.strings, value: remainingActiveSeconds)).string
-                    tooltipScreenValue.content = .actionSucceeded(title: component.strings.Story_ToastStealthModeActiveTitle, text: text, cancel: "", destructive: false)
+                        let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }.withUpdated(theme: defaultDarkPresentationTheme)
+                        let text = component.strings.Story_ToastStealthModeActiveText(timeIntervalString(strings: presentationData.strings, value: remainingActiveSeconds)).string
+                        tooltipScreenValue.content = .actionSucceeded(title: component.strings.Story_ToastStealthModeActiveTitle, text: text, cancel: "", destructive: false)
+                    }
                 })
 
                 self.tooltipScreen?.dismiss(animated: true)
@@ -4105,11 +4107,13 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
                 self.currentLiveStreamStarsIsActive = true
                 self.currentLiveStreamStarsIsActiveTimer?.invalidate()
                 self.currentLiveStreamStarsIsActiveTimer = Foundation.Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false, block: { [weak self, weak view] _ in
-                    guard let self, let view else {
-                        return
+                    Task { @MainActor [weak self, weak view] in
+                        guard let self, let view else {
+                            return
+                        }
+                        self.currentLiveStreamStarsIsActive = false
+                        view.state?.updated(transition: .spring(duration: 0.4))
                     }
-                    self.currentLiveStreamStarsIsActive = false
-                    view.state?.updated(transition: .spring(duration: 0.4))
                 })
 
                 var totalStars = 0

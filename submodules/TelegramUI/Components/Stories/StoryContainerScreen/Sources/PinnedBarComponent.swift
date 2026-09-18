@@ -147,11 +147,13 @@ private final class PinnedBarMessageComponent: Component {
             
             if self.updateTimer == nil {
                 self.updateTimer = Foundation.Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true, block: { [weak self] _ in
-                    guard let self else {
-                        return
-                    }
-                    if !self.isUpdating {
-                        self.state?.updated(transition: .immediate, isLocal: true)
+                    Task { @MainActor [weak self] in
+                        guard let self else {
+                            return
+                        }
+                        if !self.isUpdating {
+                            self.state?.updated(transition: .immediate, isLocal: true)
+                        }
                     }
                 })
             }

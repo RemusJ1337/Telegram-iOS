@@ -1452,7 +1452,9 @@ private final class StoryContainerScreenComponent: Component {
                     
                     if self.stealthModeTimer == nil {
                         self.stealthModeTimer = Foundation.Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true, block: { [weak self] _ in
-                            self?.state?.updated(transition: .immediate)
+                            Task { @MainActor [weak self] in
+                                self?.state?.updated(transition: .immediate)
+                            }
                         })
                     }
                 } else {
