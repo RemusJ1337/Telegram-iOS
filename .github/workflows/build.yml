@@ -65,12 +65,18 @@ jobs:
             --configuration=release_arm64 \
             --buildNumber="$BUILD_NUMBER" \
             --enableParallelSwiftmoduleGeneration \
-            --disableDsym
+            --disableDsym \
+            --outputBuildArtifactsPath="build/artifacts"
 
           OUTPUT_PATH="build/artifacts"
-          rm -rf "$OUTPUT_PATH"
           mkdir -p "$OUTPUT_PATH"
-          find bazel-out -name "Telegram.ipa" -exec cp {} "$OUTPUT_PATH/" \;
+          if [ ! -f "$OUTPUT_PATH/Telegram.ipa" ]; then
+            echo "Searching for Telegram.ipa with find -L and in BAZEL_USER_ROOT..."
+            find -L . -name "Telegram.ipa" -exec cp {} "$OUTPUT_PATH/" \; 2>/dev/null || true
+            find "$BAZEL_USER_ROOT" -name "Telegram.ipa" -exec cp {} "$OUTPUT_PATH/" \; 2>/dev/null || true
+          fi
+          ls -lh "$OUTPUT_PATH"
+          test -f "$OUTPUT_PATH/Telegram.ipa"
 
       - name: Save Bazel Cache
         uses: actions/cache/save@v4
