@@ -544,7 +544,8 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                     }*/
                     let showTranslateIfTopical = false
                     
-                    let (_, language) = canTranslateText(context: self.context, text: text.string, showTranslate: translationSettings.showTranslate, showTranslateIfTopical: showTranslateIfTopical, ignoredLanguages: translationSettings.ignoredLanguages)
+                    let textString = text.string
+                    let (_, language) = canTranslateText(context: self.context, text: textString, showTranslate: translationSettings.showTranslate, showTranslateIfTopical: showTranslateIfTopical, ignoredLanguages: translationSettings.ignoredLanguages)
                     
                     let _ = ApplicationSpecificNotice.incrementTranslationSuggestion(accountManager: self.context.sharedContext.accountManager, timestamp: Int32(Date().timeIntervalSince1970)).start()
 
@@ -556,7 +557,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                             context: self.context,
                             theme: defaultDarkPresentationTheme,
                             mode: .translate(fromLanguage: language, applyResult: nil),
-                            inputText: .plain(text: text.string, entities: []),
+                            inputText: .plain(text: textString, entities: []),
                             copyResult: { [weak self] text in
                                 guard let self else {
                                     return
