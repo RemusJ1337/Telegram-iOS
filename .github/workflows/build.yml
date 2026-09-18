@@ -25,7 +25,7 @@ jobs:
           xcodebuild -version
 
       - name: Restore Bazel Cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: /Users/Shared/bazel-cache
           key: bazel-cache-${{ runner.os }}-${{ github.run_id }}
@@ -71,6 +71,13 @@ jobs:
           rm -rf "$OUTPUT_PATH"
           mkdir -p "$OUTPUT_PATH"
           find bazel-out -name "Telegram.ipa" -exec cp {} "$OUTPUT_PATH/" \;
+
+      - name: Save Bazel Cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: /Users/Shared/bazel-cache
+          key: bazel-cache-${{ runner.os }}-${{ github.run_id }}
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
