@@ -670,6 +670,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
         }
         
         
+        #if swift(>=6.0)
         func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping @MainActor (WKNavigationResponsePolicy) -> Void) {
             if #available(iOS 14.5, *), navigationResponse.response.suggestedFilename?.lowercased().hasSuffix(".pkpass") == true {
                 decisionHandler(.download)
@@ -677,6 +678,15 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 decisionHandler(.allow)
             }
         }
+        #else
+        func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
+            if #available(iOS 14.5, *), navigationResponse.response.suggestedFilename?.lowercased().hasSuffix(".pkpass") == true {
+                decisionHandler(.download)
+            } else {
+                decisionHandler(.allow)
+            }
+        }
+        #endif
         
         private var downloadArguments: (String, String)?
         
