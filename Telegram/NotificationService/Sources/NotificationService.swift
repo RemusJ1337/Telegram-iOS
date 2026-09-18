@@ -591,6 +591,7 @@ private struct NotificationContent: CustomStringConvertible {
             content.subtitle = subtitle
         }
         if let body = self.body {
+            #if swift(>=6.0)
             if #available(iOS 18.0, *) {
                 if !self.resolvedEmojiFiles.isEmpty {
                     let attributedString = NSMutableAttributedString(string: body)
@@ -631,6 +632,9 @@ private struct NotificationContent: CustomStringConvertible {
             } else {
                 content.body = body
             }
+            #else
+            content.body = body
+            #endif
         }
         
         if !content.title.isEmpty || !content.subtitle.isEmpty || !content.body.isEmpty {
@@ -1769,7 +1773,7 @@ private final class NotificationServiceHandler {
                                             |> timeout(10.0, queue: queue, alternate: .single(nil)),
                                             wasDisplayed,
                                             resolvedEmojiFiles
-                                            |> timeout(10.0, queue: queue, alternate: .single([:])),
+                                            |> timeout(10.0, queue: queue, alternate: .single([:]))
                                         )
                                         |> deliverOn(queue)).start(next: { mediaData, notificationSoundData, wasDisplayed, resolvedEmojiFiles in
                                             guard let strongSelf = self, let stateManager = strongSelf.stateManager else {
@@ -2701,7 +2705,7 @@ public struct Customoji {
     private static let maxSide = 4_096
 
     // MARK: - Synchronous Builder
-    #if swift(>=5.10)
+    #if swift(>=6.0)
         @available(iOS 18.0, macCatalyst 18.0, macOS 15.0, *)
         /// Generates an ``NSAdaptiveImageGlyph`` synchronously on the **current** thread.
         ///
@@ -2737,7 +2741,7 @@ public struct Customoji {
     #endif
 
     // MARK: - AttributedString Utilities
-    #if swift(>=5.10)
+    #if swift(>=6.0)
         @available(iOS 18.0, macCatalyst 18.0, macOS 15.0, *)
         /// Breaks an ``NSAttributedString`` that may contain adaptive-image glyphs into three parts.
         ///
@@ -2826,6 +2830,7 @@ public struct Customoji {
 //  Public-facing symbols have already been documented above.
 // =============================================================
 
+#if swift(>=6.0)
 // MARK: - Core Builder
 @available(iOS 18.0, macCatalyst 18.0, macOS 15.0, *)
 extension Customoji {
@@ -2851,6 +2856,7 @@ extension Customoji {
         return NSAdaptiveImageGlyph(imageContent: data)
     }
 }
+#endif
 
 // MARK: - HEIC Encoder
 @available(iOS 18.0, macCatalyst 18.0, macOS 15.0, *)
