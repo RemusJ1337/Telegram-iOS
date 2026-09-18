@@ -42,6 +42,7 @@ public func presentTranslateScreen(
 }
 
 private func presentSystemTranslateScreen(context: AccountContext, text: String) {
+    #if swift(>=6.0)
     if #available(iOS 18.0, *), let rootViewController = context.sharedContext.mainWindow?.viewController?.view.window?.rootViewController {
         var dismissImpl: (() -> Void)?
         let pickerView = TranslateScreenHostingView(text: text, completionHandler: { [weak rootViewController] in
@@ -60,8 +61,13 @@ private func presentSystemTranslateScreen(context: AccountContext, text: String)
             })
         }
     }
+    #else
+    let _ = context
+    let _ = text
+    #endif
 }
 
+#if swift(>=6.0)
 @available(iOS 18.0, *)
 struct TranslateScreenHostingView: View {
     @State var presented = true
@@ -86,3 +92,4 @@ struct TranslateScreenHostingView: View {
             }
     }
 }
+#endif
