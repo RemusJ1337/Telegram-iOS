@@ -1331,7 +1331,7 @@ public final class PresentationCallImpl: PresentationCall {
                         let fileAttrs = (try? FileManager.default.attributesOfItem(atPath: path)) ?? [:]
                         let fileSize = (fileAttrs[.size] as? NSNumber)?.int64Value ?? 0
                         if fileSize > 1000 {
-                            let duration = Int32(max(1, (fileSize - 44) / 96000))
+                            let duration = Int(max(1, (fileSize - 44) / 96000))
                             let id = Int64.random(in: Int64.min ... Int64.max)
                             let fileName = (path as NSString).lastPathComponent
                             let peerTitle = peer?.displayTitle(strings: presentationStrings, displayOrder: .firstLast) ?? "Звонок"
