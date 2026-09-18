@@ -529,7 +529,13 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         
         let baseAppBundleId = Bundle.main.bundleIdentifier!
         let appGroupName = "group.\(baseAppBundleId)"
-        let maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)
+        var maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)
+        if maybeAppGroupUrl == nil {
+            let documentsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            let fallbackGroupUrl = documentsUrl.appendingPathComponent("AppGroup")
+            let _ = try? FileManager.default.createDirectory(at: fallbackGroupUrl, withIntermediateDirectories: true, attributes: nil)
+            maybeAppGroupUrl = fallbackGroupUrl
+        }
         
         let buildConfig = BuildConfig(baseAppBundleId: baseAppBundleId)
         self.buildConfig = buildConfig
@@ -641,9 +647,14 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
             isICloudEnabled: buildConfig.isICloudEnabled
         )
         
-        guard let appGroupUrl = maybeAppGroupUrl else {
-            self.mainWindow?.presentNative(UIAlertController(title: nil, message: "Error 2", preferredStyle: .alert))
-            return true
+        let appGroupUrl: URL
+        if let maybeAppGroupUrl = maybeAppGroupUrl {
+            appGroupUrl = maybeAppGroupUrl
+        } else {
+            let documentsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            let fallbackGroupUrl = documentsUrl.appendingPathComponent("AppGroup")
+            let _ = try? FileManager.default.createDirectory(at: fallbackGroupUrl, withIntermediateDirectories: true, attributes: nil)
+            appGroupUrl = fallbackGroupUrl
         }
         
         var isDebugConfiguration = false
@@ -671,6 +682,7 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         } else {
             rootPath = rootPathForBasePath(appGroupUrl.path)
         }
+        let _ = try? FileManager.default.createDirectory(atPath: rootPath, withIntermediateDirectories: true, attributes: nil)
         if !isUITest {
             performAppGroupUpgrades(appGroupPath: appGroupUrl.path, rootPath: rootPath)
         }
