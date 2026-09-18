@@ -160,8 +160,10 @@ public final class DeviceAccess {
                             subscriber.putNext(.notDetermined)
                         case .authorized:
                             subscriber.putNext(.allowed)
+                        #if swift(>=6.0)
                         case .limited:
                             subscriber.putNext(.limited)
+                        #endif
                         default:
                             subscriber.putNext(.denied)
                     }
@@ -533,9 +535,11 @@ public final class DeviceAccess {
                                 case .authorized:
                                     self.contactsPromise.set(.single(true))
                                     completion(true)
+                                #if swift(>=6.0)
                                 case .limited:
                                     self.contactsPromise.set(.single(true))
                                     completion(true)
+                                #endif
                                 default:
                                     self.contactsPromise.set(.single(false))
                                     completion(false)
