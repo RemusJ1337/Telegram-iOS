@@ -774,7 +774,7 @@ public class AttachmentController: ViewController, MinimizableController {
                     }
                     let captionString = caption.string
                     Task { @MainActor [weak self, weak controller] in
-                        guard let self, let controller, let mediaPickerContext = self.mediaPickerContext else {
+                        guard let self, let controller else {
                             return
                         }
 
