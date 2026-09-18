@@ -59,27 +59,6 @@ public func createBackdropLayer() -> CALayer? {
     return invokeBackdropLayerCreateMethod().flatMap(invokeBackdropLayerInitMethod) as? CALayer
 }
 
-
-private var cachedBackdropLayerSetScaleMethod: (@convention(c) (NSObject, Selector, Double) -> Void, Selector)?
-private func invokeBackdropLayerSetScaleMethod(object: NSObject, scale: Double) {
-    if let cachedBackdropLayerSetScaleMethod {
-        cachedBackdropLayerSetScaleMethod.0(object, cachedBackdropLayerSetScaleMethod.1, scale)
-    } else {
-        let method: (@convention(c) (AnyObject, Selector, Double) -> Void)? = getMethod(object: object, selector: "setScale:")
-        if let method {
-            let selector = NSSelectorFromString("setScale:")
-            cachedBackdropLayerSetScaleMethod = (method, selector)
-            return method(object, selector, scale)
-        }
-    }
-}
-
-private final class BackdropLayerDelegate: NSObject, CALayerDelegate {
-    func action(for layer: CALayer, forKey event: String) -> CAAction? {
-        return nullAction
-    }
-}
-
 final class LegacyGlassView: UIView {
     enum Style {
         case normal
@@ -129,7 +108,6 @@ final class LegacyGlassView: UIView {
 
     func update(size: CGSize, shape: GlassBackgroundView.Shape, style: Style, isDark: Bool = false, transition: ComponentTransition) {
         let params = Params(size: size, shape: shape, style: style, isDark: isDark)
-        let previousParams = self.params
         if self.params == params {
             return
         }
