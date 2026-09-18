@@ -530,6 +530,14 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         let baseAppBundleId = Bundle.main.bundleIdentifier!
         let appGroupName = "group.\(baseAppBundleId)"
         var maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)
+        if let groupUrl = maybeAppGroupUrl {
+            let testUrl = groupUrl.appendingPathComponent(".test_write")
+            let canWrite = (try? "test".write(to: testUrl, atomically: true, encoding: .utf8)) != nil
+            let _ = try? FileManager.default.removeItem(at: testUrl)
+            if !canWrite {
+                maybeAppGroupUrl = nil
+            }
+        }
         if maybeAppGroupUrl == nil {
             let documentsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             let fallbackGroupUrl = documentsUrl.appendingPathComponent("AppGroup")

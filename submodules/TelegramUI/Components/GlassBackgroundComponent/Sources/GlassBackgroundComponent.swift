@@ -557,6 +557,7 @@ public class GlassBackgroundView: UIView {
         }
         if let foregroundView = self.foregroundView {
             self.addSubview(foregroundView)
+            foregroundView.mask = self.maskContainerView
         }
         self.addSubview(self.contentContainer)
         if let legacyHighlightContainerView = self.legacyHighlightContainerView {
