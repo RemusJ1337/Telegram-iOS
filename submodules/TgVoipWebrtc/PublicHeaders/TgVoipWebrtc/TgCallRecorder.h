@@ -2,8 +2,8 @@
 #define TG_CALL_RECORDER_H
 
 #import <Foundation/Foundation.h>
-#include <cstdint>
-#include <cstddef>
+#include <stdint.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
