@@ -145,3 +145,16 @@ public extension UISlider {
     }
 }
 
+private var supportsAdaptiveImageGlyphKey: Int?
+
+public extension UITextView {
+    var supportsAdaptiveImageGlyph: Bool {
+        get {
+            return (objc_getAssociatedObject(self, &supportsAdaptiveImageGlyphKey) as? Bool) ?? false
+        }
+        set {
+            objc_setAssociatedObject(self, &supportsAdaptiveImageGlyphKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        }
+    }
+}
+
