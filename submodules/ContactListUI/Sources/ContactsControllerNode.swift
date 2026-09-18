@@ -550,6 +550,7 @@ private final class ContactContextExtractedContentSource: ContextExtractedConten
     }
 }
 
+#if swift(>=6.0)
 public func presentContactAccessPicker(context: AccountContext) {
     if #available(iOS 18.0, *), let rootViewController = context.sharedContext.mainWindow?.viewController?.view.window?.rootViewController {
         var dismissImpl: (() -> Void)?
@@ -590,3 +591,9 @@ struct ContactAccessPickerHostingView: View {
             }
     }
 }
+#else
+public func presentContactAccessPicker(context: AccountContext) {
+    let _ = context
+}
+#endif
+
