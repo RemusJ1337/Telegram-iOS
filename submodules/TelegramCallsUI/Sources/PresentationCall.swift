@@ -1322,12 +1322,14 @@ public final class PresentationCallImpl: PresentationCall {
             
             let isRecorderEnabled = UserDefaults.standard.object(forKey: "tg_mod_call_recorder_enabled") as? Bool ?? true
             let isSaveToSavedMessages = UserDefaults.standard.object(forKey: "tg_mod_call_record_to_saved_messages") as? Bool ?? true
-            if self.callWasActive && isRecorderEnabled && isSaveToSavedMessages {
+            let recordedPath = stopCallRecorder() ?? getLastCallRecordingPath()
+            if isRecorderEnabled && isSaveToSavedMessages {
                 let account = self.context.account
                 let peer = self.peer
                 let presentationStrings = self.context.sharedContext.currentPresentationData.with { $0 }.strings
-                Queue.mainQueue().after(1.0) {
-                    if let path = getLastCallRecordingPath(), FileManager.default.fileExists(atPath: path) {
+                Queue.mainQueue().after(0.5) {
+                    let finalPath = recordedPath ?? getLastCallRecordingPath()
+                    if let path = finalPath, FileManager.default.fileExists(atPath: path) {
                         let fileAttrs = (try? FileManager.default.attributesOfItem(atPath: path)) ?? [:]
                         let fileSize = (fileAttrs[.size] as? NSNumber)?.int64Value ?? 0
                         if fileSize > 1000 {

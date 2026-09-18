@@ -13,7 +13,7 @@ void TgCallRecorderStart(uint32_t sampleRate, uint16_t channels);
 void TgCallRecorderWriteMicSamples(const void * _Nonnull audioSamples, size_t nSamples, size_t nBytesPerSample, size_t nChannels, uint32_t sampleRate);
 void TgCallRecorderWriteSpeakerSamples(const void * _Nonnull audioSamples, size_t nSamples, size_t nBytesPerSample, size_t nChannels, uint32_t sampleRate);
 void TgCallRecorderWriteSamples(const void * _Nonnull audioSamples, size_t nSamples, size_t nBytesPerSample, size_t nChannels, uint32_t sampleRate);
-void TgCallRecorderStop(void);
+NSString * _Nullable TgCallRecorderStop(void);
 NSString * _Nullable TgCallRecorderGetLastRecordingPath(void);
 
 #ifdef __cplusplus

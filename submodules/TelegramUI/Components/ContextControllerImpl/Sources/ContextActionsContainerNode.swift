@@ -186,28 +186,25 @@ private final class InnerActionsContainerNode: ASDisplayNode {
             minActionsWidth = minimalWidth
         }
                 
+        if self.effectView == nil {
+            let effectView: UIVisualEffectView
+            if #available(iOS 13.0, *) {
+                if self.presentationData.theme.overallDarkAppearance || self.presentationData.theme.rootController.keyboardColor == .dark {
+                    effectView = UIVisualEffectView(effect: UIBlurEffect(style: .systemMaterialDark))
+                } else {
+                    effectView = UIVisualEffectView(effect: UIBlurEffect(style: .systemMaterialLight))
+                }
+            } else {
+                effectView = UIVisualEffectView(effect: UIBlurEffect(style: .light))
+            }
+            self.effectView = effectView
+            self.containerNode.view.insertSubview(effectView, at: 0)
+        }
         switch widthClass {
         case .compact:
             minActionsWidth = max(minActionsWidth, floor(constrainedWidth / 3.0))
-            if let effectView = self.effectView {
-                self.effectView = nil
-                effectView.removeFromSuperview()
-            }
         case .regular:
-            if self.effectView == nil {
-                let effectView: UIVisualEffectView
-                if #available(iOS 13.0, *) {
-                    if self.presentationData.theme.rootController.keyboardColor == .dark {
-                        effectView = UIVisualEffectView(effect: UIBlurEffect(style: .systemMaterialDark))
-                    } else {
-                        effectView = UIVisualEffectView(effect: UIBlurEffect(style: .systemMaterialLight))
-                    }
-                } else {
-                    effectView = UIVisualEffectView(effect: UIBlurEffect(style: .light))
-                }
-                self.effectView = effectView
-                self.containerNode.view.insertSubview(effectView, at: 0)
-            }
+            break
         }
         minActionsWidth = min(minActionsWidth, constrainedWidth)
         let separatorHeight: CGFloat = 8.0

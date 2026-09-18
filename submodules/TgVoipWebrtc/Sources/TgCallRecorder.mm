@@ -33,6 +33,10 @@ public:
 
     void start(uint32_t sampleRate, uint16_t channels) {
         std::lock_guard<std::mutex> lock(_mutex);
+        startInternal(sampleRate, channels);
+    }
+
+    void startInternal(uint32_t sampleRate, uint16_t channels) {
         if (_file) {
             stopInternal();
         }
@@ -87,12 +91,15 @@ public:
         }
     }
 
-    void writeMicSamples(const void *samples, size_t nSamples, size_t nBytesPerSample, size_t nChannels, uint32_t /*sampleRate*/) {
+    void writeMicSamples(const void *samples, size_t nSamples, size_t nBytesPerSample, size_t nChannels, uint32_t sampleRate) {
         if (!samples || nSamples == 0) {
             return;
         }
 
         std::lock_guard<std::mutex> lock(_mutex);
+        if (!_file) {
+            startInternal(sampleRate > 0 ? sampleRate : 48000, 1);
+        }
         if (!_file) {
             return;
         }
@@ -101,12 +108,15 @@ public:
         mixBuffers();
     }
 
-    void writeSpeakerSamples(const void *samples, size_t nSamples, size_t nBytesPerSample, size_t nChannels, uint32_t /*sampleRate*/) {
+    void writeSpeakerSamples(const void *samples, size_t nSamples, size_t nBytesPerSample, size_t nChannels, uint32_t sampleRate) {
         if (!samples || nSamples == 0) {
             return;
         }
 
         std::lock_guard<std::mutex> lock(_mutex);
+        if (!_file) {
+            startInternal(sampleRate > 0 ? sampleRate : 48000, 1);
+        }
         if (!_file) {
             return;
         }
@@ -115,9 +125,10 @@ public:
         mixBuffers();
     }
 
-    void stop() {
+    NSString *stop() {
         std::lock_guard<std::mutex> lock(_mutex);
         stopInternal();
+        return _lastRecordingPath;
     }
 
     NSString *getLastRecordingPath() {
@@ -248,8 +259,8 @@ void TgCallRecorderWriteSamples(const void *audioSamples, size_t nSamples, size_
     CallRecorderImpl::shared().writeMicSamples(audioSamples, nSamples, nBytesPerSample, nChannels, sampleRate);
 }
 
-void TgCallRecorderStop(void) {
-    CallRecorderImpl::shared().stop();
+NSString *TgCallRecorderStop(void) {
+    return CallRecorderImpl::shared().stop();
 }
 
 NSString *TgCallRecorderGetLastRecordingPath(void) {

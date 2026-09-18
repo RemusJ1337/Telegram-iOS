@@ -1483,6 +1483,10 @@ private final class LensTransitionContainerEffectViewImpl: UIView, LensTransitio
                 //glassEffectValue.tintColor = UIColor(white: 1.0, alpha: 0.1)
             }
             self.glassView.effect = glassEffectValue
+        } else {
+            let blurStyle: UIBlurEffect.Style = theme.overallDarkAppearance ? .systemMaterialDark : .systemMaterialLight
+            self.glassView.effect = UIBlurEffect(style: blurStyle)
+            self.glassView.contentView.backgroundColor = theme.overallDarkAppearance ? UIColor(white: 0.15, alpha: 0.25) : UIColor(white: 1.0, alpha: 0.25)
         }
     }
     
@@ -1492,6 +1496,9 @@ private final class LensTransitionContainerEffectViewImpl: UIView, LensTransitio
             self.glassView.center = CGPoint(x: size.width * 0.5, y: size.height * 0.5)
             if #available(iOS 26.0, *) {
                 self.glassView.cornerConfiguration = .corners(radius: UICornerRadius(floatLiteral: cornerRadius))
+            } else {
+                self.glassView.layer.cornerRadius = cornerRadius
+                self.glassView.clipsToBounds = cornerRadius > 0
             }
         }
     }
@@ -1587,6 +1594,10 @@ private final class LensTransitionContainerEffectViewImpl: UIView, LensTransitio
     
     func updateCornerRadius(duration: Double, keyframes: [CGFloat]) {
         guard #available(iOS 26.0, *) else {
+            if let last = keyframes.last {
+                self.glassView.layer.cornerRadius = last
+                self.glassView.clipsToBounds = last > 0
+            }
             return
         }
         

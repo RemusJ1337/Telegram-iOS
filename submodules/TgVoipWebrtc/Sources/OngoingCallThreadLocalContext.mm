@@ -506,6 +506,7 @@ public:
             }
         }
         _mutex.Unlock();
+        TgCallRecorderWriteMicSamples(audioSamples, nSamples, nBytesPerSample, nChannels, samplesPerSec);
         return 0;
     }
     
@@ -2020,9 +2021,13 @@ static void (*InternalVoipLoggingFunction)(NSString *) = NULL;
         }
         [RTCAudioSession sharedInstance].isAudioEnabled = isAudioSessionActive;
     }
+    if (isAudioSessionActive) {
+        TgCallRecorderStart(48000, 1);
+    }
 }
 
 + (void)stopWithTerminationResult:(OngoingCallThreadLocalContextWebrtcTerminationResult *)terminationResult completion:(void (^)(NSString *, int64_t, int64_t, int64_t, int64_t))completion {
+    TgCallRecorderStop();
     if (completion) {
         if (terminationResult) {
             NSString *debugLog = [NSString stringWithUTF8String:terminationResult.finalState.debugLog.c_str()];
@@ -2769,6 +2774,7 @@ useReferenceImpl:(bool)useReferenceImpl {
 - (void)setManualAudioSessionIsActive:(bool)isAudioSessionActive {
     if (isAudioSessionActive) {
         [[RTCAudioSession sharedInstance] audioSessionDidActivate:[AVAudioSession sharedInstance]];
+        TgCallRecorderStart(48000, 1);
     } else {
         [[RTCAudioSession sharedInstance] audioSessionDidDeactivate:[AVAudioSession sharedInstance]];
     }

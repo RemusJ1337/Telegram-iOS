@@ -1911,3 +1911,7 @@ private final class CallSignalingConnectionManager {
 public func getLastCallRecordingPath() -> String? {
     return TgCallRecorderGetLastRecordingPath()
 }
+
+public func stopCallRecorder() -> String? {
+    return TgCallRecorderStop()
+}

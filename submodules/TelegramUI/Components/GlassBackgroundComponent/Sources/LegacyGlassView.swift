@@ -90,11 +90,13 @@ final class LegacyGlassView: UIView {
         let size: CGSize
         let shape: GlassBackgroundView.Shape
         let style: Style
+        let isDark: Bool
         
-        init(size: CGSize, shape: GlassBackgroundView.Shape, style: Style) {
+        init(size: CGSize, shape: GlassBackgroundView.Shape, style: Style, isDark: Bool) {
             self.size = size
             self.shape = shape
             self.style = style
+            self.isDark = isDark
         }
     }
     
@@ -102,14 +104,9 @@ final class LegacyGlassView: UIView {
     private var maskLayer: CAShapeLayer?
     
     private let blurView: UIVisualEffectView
-    private let backdropLayer: CALayer?
-    private let backdropLayerDelegate: BackdropLayerDelegate
     
     override init(frame: CGRect) {
-        self.backdropLayerDelegate = BackdropLayerDelegate()
-        self.backdropLayer = createBackdropLayer()
-        
-        let blurEffect = UIBlurEffect(style: .systemThinMaterial)
+        let blurEffect = UIBlurEffect(style: .systemMaterialDark)
         let blurView = UIVisualEffectView(effect: blurEffect)
         blurView.isUserInteractionEnabled = false
         self.blurView = blurView
@@ -120,14 +117,6 @@ final class LegacyGlassView: UIView {
         self.clipsToBounds = true
         
         self.addSubview(blurView)
-        
-        if let backdropLayer = self.backdropLayer {
-            self.layer.addSublayer(backdropLayer)
-            backdropLayer.delegate = self.backdropLayerDelegate
-            
-            invokeBackdropLayerSetScaleMethod(object: backdropLayer, scale: 1.0)
-            backdropLayer.rasterizationScale = 1.0
-        }
     }
     
     required init?(coder: NSCoder) {
@@ -139,7 +128,7 @@ final class LegacyGlassView: UIView {
     }
 
     func update(size: CGSize, shape: GlassBackgroundView.Shape, style: Style, isDark: Bool = false, transition: ComponentTransition) {
-        let params = Params(size: size, shape: shape, style: style)
+        let params = Params(size: size, shape: shape, style: style, isDark: isDark)
         let previousParams = self.params
         if self.params == params {
             return
@@ -152,9 +141,14 @@ final class LegacyGlassView: UIView {
         case .clear:
             blurStyle = isDark ? .systemUltraThinMaterialDark : .systemUltraThinMaterialLight
         case .normal:
-            blurStyle = isDark ? .systemThinMaterialDark : .systemThinMaterialLight
+            blurStyle = isDark ? .systemMaterialDark : .systemMaterialLight
         }
         self.blurView.effect = UIBlurEffect(style: blurStyle)
+        if isDark {
+            self.blurView.contentView.backgroundColor = UIColor(white: 0.15, alpha: style == .clear ? 0.08 : 0.25)
+        } else {
+            self.blurView.contentView.backgroundColor = UIColor(white: 1.0, alpha: style == .clear ? 0.08 : 0.25)
+        }
         
         switch shape {
         case let .roundedRect(cornerRadius):
@@ -179,78 +173,6 @@ final class LegacyGlassView: UIView {
             }
             transition.setFrame(layer: maskLayer, frame: CGRect(origin: CGPoint(), size: size))
             transition.setShapeLayerPath(layer: maskLayer, path: GlassBackgroundView.generateRoundedRectPath(size: size, cornerRadii: cornerRadii))
-        }
-        
-        guard let backdropLayer = self.backdropLayer else {
-            return
-        }
-        
-        if previousParams?.style != style {
-            if let blurFilter = CALayer.blur(), let colorMatrixFilter = CALayer.colorMatrix() {
-                switch style {
-                case .clear:
-                    if #available(iOS 17.0, *), DeviceMetrics.performance.isGraphicallyCapable {
-                        blurFilter.setValue(2.0 as NSNumber, forKey: "inputRadius")
-                    } else {
-                        blurFilter.setValue(6.0 as NSNumber, forKey: "inputRadius")
-                    }
-                case .normal:
-                    blurFilter.setValue(2.0 as NSNumber, forKey: "inputRadius")
-                }
-                
-                var matrix: [Float32] = [
-                    2.6705, -1.1087999, -0.1117, 0.0, 0.049999997,
-                    -0.3295, 1.8914, -0.111899994, 0.0, 0.049999997,
-                    -0.3297, -1.1084, 2.8881, 0.0, 0.049999997,
-                    0.0, 0.0, 0.0, 1.0, 0.0
-                ]
-                colorMatrixFilter.setValue(NSValue(bytes: &matrix, objCType: "{CAColorMatrix=ffffffffffffffffffff}"), forKey: "inputColorMatrix")
-                colorMatrixFilter.setValue(true as NSNumber, forKey: "inputBackdropAware")
-                
-                switch style {
-                case .clear:
-                    backdropLayer.filters = [blurFilter]
-                case .normal:
-                    backdropLayer.filters = [colorMatrixFilter, blurFilter]
-                }
-            }
-        }
-        
-        transition.setFrame(layer: backdropLayer, frame: CGRect(origin: CGPoint(), size: size))
-        
-        if #available(iOS 17.0, *), DeviceMetrics.performance.isGraphicallyCapable {
-            let size = CGSize(width: max(1.0, size.width), height: max(1.0, size.height))
-            let cornerRadius = min(min(size.width, size.height) * 0.5, shape.maximumCornerRadius(for: size))
-            let displacementMagnitudePoints: CGFloat = 20.0
-            let displacementMagnitudeU = displacementMagnitudePoints / size.width
-            let displacementMagnitudeV = displacementMagnitudePoints / size.height
-            let outerEdgeDistance = 2.0
-            
-            let meshTransform = generateGlassMesh(
-                size: size,
-                cornerRadius: cornerRadius,
-                edgeDistance: min(12.0, cornerRadius),
-                displacementMagnitudeU: displacementMagnitudeU,
-                displacementMagnitudeV: displacementMagnitudeV,
-                cornerResolution: 12,
-                outerEdgeDistance: outerEdgeDistance,
-                bezier: DisplacementBezier(
-                    x1: 0.816137566137566,
-                    y1: 0.20502645502645533,
-                    x2: 0.5806878306878306,
-                    y2: 0.873015873015873
-                )
-            ).mesh.makeValue()
-
-            if let meshTransform {
-                if !transition.animation.isImmediate, let previousTransform = backdropLayer.value(forKey: "meshTransform") as? NSObject {
-                    backdropLayer.removeAnimation(forKey: "meshTransform")
-                    backdropLayer.setValue(meshTransform, forKey: "meshTransform")
-                    transition.animateMeshTransform(layer: backdropLayer, from: previousTransform, to: meshTransform)
-                } else {
-                    backdropLayer.setValue(meshTransform, forKey: "meshTransform")
-                }
-            }
         }
     }
 }
