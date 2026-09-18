@@ -43,6 +43,7 @@ class BazelCommandLine:
         self.split_submodules = False
         self.custom_target = None
         self.continue_on_error = False
+        self.disable_dsym = False
         self.show_actions = False
         self.enable_sandbox = False
         self.disable_provisioning_profiles = False
@@ -138,6 +139,9 @@ class BazelCommandLine:
     def set_disable_provisioning_profiles(self):
         self.disable_provisioning_profiles = True
 
+    def set_disable_dsym(self, value):
+        self.disable_dsym = value
+
     def set_profile_swift(self, value):
         self.profile_swift = value
 
@@ -185,13 +189,16 @@ class BazelCommandLine:
 
                 # Always build universal Watch binaries.
                 '--watchos_cpus=arm64_32',
+            ]
+            if not self.disable_dsym:
+                self.configuration_args += [
+                    # Generate DSYM files when building.
+                    '--apple_generate_dsym',
 
-                # Generate DSYM files when building.
-                '--apple_generate_dsym',
-
-                # Require DSYM files as build output.
-                '--output_groups=+dsyms',
-            ] + self.common_release_args
+                    # Require DSYM files as build output.
+                    '--output_groups=+dsyms',
+                ]
+            self.configuration_args += self.common_release_args
         else:
             raise Exception('Unknown configuration {}'.format(configuration))
 
@@ -678,6 +685,9 @@ def build(bazel, arguments):
         additional_codesigning_output_path=None
     )
 
+    if arguments.disableDsym:
+        bazel_command_line.set_disable_dsym(True)
+
     bazel_command_line.set_configuration(arguments.configuration)
     if arguments.embedWatchApp:
         if arguments.configuration in ('debug_arm64', 'release_arm64'):
@@ -1055,6 +1065,12 @@ if __name__ == '__main__':
         default=False,
         help='Generate .swiftmodule files in parallel to building modules, can speed up compilation on multi-core '
              'systems. '
+    )
+    buildParser.add_argument(
+        '--disableDsym',
+        action='store_true',
+        default=False,
+        help='Do not generate DSYM files to speed up the build.'
     )
     buildParser.add_argument(
         '--profileSwift',
