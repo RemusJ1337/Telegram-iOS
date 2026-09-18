@@ -123,3 +123,25 @@ public extension UIView {
         }
     }
 }
+
+public struct UISliderTrackConfiguration {
+    public var numberOfTicks: Int
+    
+    public init(numberOfTicks: Int) {
+        self.numberOfTicks = numberOfTicks
+    }
+}
+
+private var sliderTrackConfigurationKey: Int?
+
+public extension UISlider {
+    var trackConfiguration: UISliderTrackConfiguration? {
+        get {
+            return objc_getAssociatedObject(self, &sliderTrackConfigurationKey) as? UISliderTrackConfiguration
+        }
+        set {
+            objc_setAssociatedObject(self, &sliderTrackConfigurationKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        }
+    }
+}
+
